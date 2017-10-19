@@ -17,8 +17,8 @@ my $window_size = 7;
 my $window = qr{($np) (?: $s+ (\w+))*};
 
 while(<>){
-  while(/$window/){
-      print("\$0 é $0 e \$1 é $1\n");
+  while(/($np) (?: $s+ (\w+))*/){
+      print("\$1 é $1 e \$2 é $2\n");
   } 
 }
 
