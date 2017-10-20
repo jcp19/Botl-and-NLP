@@ -7,6 +7,8 @@ use utf8::all;
 # processar paragrafo a paragrafo
 $/ = ''; 
 
+my $graph = Graph::Undirected->new;
+
 my $PM = qr{\b[A-Z][\w-]*\w};
 my $de = qr{d[aoe]s?};
 my $s = qr{[\n ]};
@@ -25,8 +27,30 @@ while(<>){
   } 
 }
 
+# simple example of 'relation' insertion in a graph
+# and show the print function result
+$graph = $graph->add_edge("Joao", "Manel");
+$graph = $graph->add_edge("Rui", "Miguel");
+$graph = $graph->add_edge("Manel", "Rui");
+print_graph($graph);
+
 sub normaliza { my $p = shift;
 	if($p=~s/\s+/ /g){
 		return "\n$p";
 	} else { return $p; }
+}
+
+# takes a graph prints graphviz representation
+# of it
+sub print_graph {
+	my $graph = shift;
+	open FILE, ">graph.gv";
+	print FILE "graph {\n";
+	my @t = split(/,/, $graph->stringify());
+	foreach(@t){
+		s/(\w)=(\w)/$1--$2/g;
+		print FILE "$_\n";
+	}
+	print FILE "}";
+	close FILE;
 }
