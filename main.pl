@@ -19,8 +19,14 @@ my $window = qr{($np) (?: $s+ (\w+))*};
 while(<>){
   #while(/($np) (?=(?: $s+ (\w+))*)/xg){
   # falta por ?=
+  s/($np)/normaliza("$1")/ge;
   while(/($np) (?: $s+ (?: [\w-]+ | ($np))) ** {0..$window_size} /xg){
       print("\$1:  $1 and \$2: $2 \n");
   } 
 }
 
+sub normaliza { my $p = shift;
+	if($p=~s/\s+/ /g){
+		return "\n$p";
+	} else { return $p; }
+}
