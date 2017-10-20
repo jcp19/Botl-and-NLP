@@ -17,9 +17,10 @@ my $window_size = 7;
 my $window = qr{($np) (?: $s+ (\w+))*};
 
 while(<>){
-  while(/($np) (?: $s+ (\w+))*/){
-      print("\$1 é $1 e \$2 é $2\n");
+  #while(/($np) (?=(?: $s+ (\w+))*)/xg){
+  # falta por ?=
+  while(/($np) (?: $s+ (?: [\w-]+ | ($np))) ** {0..$window_size} /xg){
+      print("\$1:  $1 and \$2: $2 \n");
   } 
 }
-
 
