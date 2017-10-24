@@ -18,13 +18,22 @@ my $window_size = 7;
 # my $window = qr{($np) (?: $s+ (?: \w+|($np))**0..$window_size)};
 my $window = qr{($np) (?: $s+ (\w+))*};
 
+#while(<>){
+#  while(/($np) (?=(?: $s+ (\w+))*)/xg){
+#  # falta por ?=
+#  s/($np)/normaliza("$1")/ge;
+#  while(/($np) (?: $s+ (?: [\w-]+ | ($np))) ** {0..$window_size} /xg){
+#      print("\$1:  $1 and \$2: $2 \n");
+#  } 
+#}
+
 while(<>){
-  #while(/($np) (?=(?: $s+ (\w+))*)/xg){
-  # falta por ?=
-  s/($np)/normaliza("$1")/ge;
-  while(/($np) (?: $s+ (?: [\w-]+ | ($np))) ** {0..$window_size} /xg){
-      print("\$1:  $1 and \$2: $2 \n");
-  } 
+  while(/($np)/g){
+    print("$1 : ");
+    my @x = /(?=(?: $s+ (?: [\w-]+ | ($np)) ){1,7})/gx;
+    my $y = join(", ", @x);
+    print("$y\n");
+  }
 }
 
 # simple example of 'relation' insertion in a graph
