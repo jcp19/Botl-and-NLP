@@ -34,16 +34,15 @@ while(<>){
     my $name = $1;
     my $tail = $2;
     # este devia dar!
-    my @cenas = $tail =~ /^(?: (\s*[!.?,;:]*\s*) (?:([\w]+)|\{\{( [^}]*)  \}\})){1,7}/gx;
+    my @cenas = $tail =~ /^(?: \s*[!.?,;:]*\s* (?:([\w]+)|\{\{( [^}]*)  \}\})){1,7}/gx;
 #    for my $cena (@cenas){
 #      print $cena; 
 #    }
     my $shit = @cenas;
-    print "::: $name :: $shit ::$tail :: $1\n" 
+    print "::: $name :: $shit ::$tail :: $2 \n" 
  
     
     #print "::: $1 :: $line :: $2 $3\n";
-    my $c;
  
 #    while($c < 7){
       
