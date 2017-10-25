@@ -39,11 +39,7 @@ while(<>){
 #      print $cena; 
 #    }
     my $shit = @cenas;
-    print "::: $name :: $shit ::$tail :: $1" 
-    for my $cena (@cenas){
-      print "$cena "; 
-    }
-    print "\n";
+    print "::: $name :: $shit ::$tail :: $1\n" 
  
     
     #print "::: $1 :: $line :: $2 $3\n";
