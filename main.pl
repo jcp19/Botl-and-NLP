@@ -30,8 +30,6 @@ my $window = qr{($np) (?: $s+ (\w+))*};
 while(<>){
   my $line = $_;
   # deteta os nomes do ficheiro anotado
-  #while(/\{\{( [^}]*)  \}\} (?=\s*[!.?,;:]*\s+ [\w+]|{\{( [^}]*)  \}\}){1,7} /gx){
-  #2 while($line =~ /\{\{( [^}]*)  \}\}  (?=\s*[!.?,;:]*\s+ (?:[\w+]|{\{( [^}]*))  \}\}) /gx){
   while($line =~ /\{\{( [^}]*)  \}\}  (?=((?:.|\n)*)) /gx){
     my $name = $1;
     my $tail = $2;
@@ -41,8 +39,12 @@ while(<>){
 #      print $cena; 
 #    }
     my $shit = @cenas;
-    print "::: $name :: $shit ::$tail :: $1 \n";
-    
+    print "::: $name :: $shit ::$tail :: $1" 
+    for my $cena (@cenas){
+      print "$cena "; 
+    }
+    print "\n";
+ 
     
     #print "::: $1 :: $line :: $2 $3\n";
     my $c;
