@@ -32,12 +32,18 @@ while(<>){
   # deteta os nomes do ficheiro anotado
   #while(/\{\{( [^}]*)  \}\} (?=\s*[!.?,;:]*\s+ [\w+]|{\{( [^}]*)  \}\}){1,7} /gx){
   #2 while($line =~ /\{\{( [^}]*)  \}\}  (?=\s*[!.?,;:]*\s+ (?:[\w+]|{\{( [^}]*))  \}\}) /gx){
-  while($line =~ /\{\{( [^}]*)  \}\}  (?=(.*)) /gx){
+  while($line =~ /\{\{( [^}]*)  \}\}  (?=((?:.|\n)*)) /gx){
     my $name = $1;
     my $tail = $2;
-    if($tail =~ /^(?: \s*[!.?,;:]*\s+ (?:[\w+]|\{\{( [^}]*)  \}\}))/x){
-        print "::: $1 :: $2\n";
-    }
+    # este devia dar!
+    my @cenas = $tail =~ /^(?: (\s*[!.?,;:]*\s*) (?:([\w]+)|\{\{( [^}]*)  \}\})){1,7}/gx;
+#    for my $cena (@cenas){
+#      print $cena; 
+#    }
+    my $shit = @cenas;
+    print "::: $name :: $shit ::$tail :: $1 \n";
+    
+    
     #print "::: $1 :: $line :: $2 $3\n";
     my $c;
  
