@@ -32,7 +32,7 @@ my $NP = qr/\{\{ [^}]* \}\}/x;
 my $NP_1 = qr/\{\{( [^}]*) \}\}/x;
 my $spaces_and_points = qr/(?: \s|[!.?,;:])*/;
 my $words = qr/(?: \w|\d)+/x;
-my $window = qr/(?: $spaces_and_points (?: $words| $NP)){0..$window_size}/x;
+my $window = qr/(?: $spaces_and_points (?: $words| $NP)){0,$window_size}/x;
 
 # Tests:
 print "success 1\n" if "{{Joao}}" =~ /$NP/x;
