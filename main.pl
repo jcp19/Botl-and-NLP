@@ -24,7 +24,7 @@ sub print_graph {
   print "graph {\n";
   my @t = split(/,/, $graph->stringify());
   foreach(@t){
-    s/(\w)=(\w)/$1--$2/g;
+    s/(.*)=(.*)/"$1"--"$2"/g;
     print "$_\n";
   }
   print "}\n";
