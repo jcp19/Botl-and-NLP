@@ -24,8 +24,13 @@ sub print_graph {
   print "graph {\n";
   my @t = split(/,/, $graph->stringify());
   foreach(@t){
-    s/(.*)=(.*)/"$1"--"$2"/g;
-    print "$_\n";
+    my $catches = s/(.*)=(.*)/"$1"--"$2"/g;
+    my $line = $_;
+    if ($catches == 0){
+      s/(.*)/"$1"/;
+      $line = $_;
+    }
+    print "$line\n";
   }
   print "}\n";
 }
@@ -54,6 +59,7 @@ while(<>){
   my $matches;
   while($matches = $line =~ /$NP_1 (?= ($window))/gx){
     my $first_name = $1;
+    $graph->add_vertex($first_name);
     my $this_window = $2;
     for my $name ($this_window =~ /$NP_1/g){
       $graph->add_edge($first_name, $name); 
