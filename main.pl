@@ -15,7 +15,10 @@ my $spaces_and_points = qr/(?: \s|[!.?,;:])*/x;
 my $words = qr/(?: \w|\d)+/x;
 my $window = qr/(?: $spaces_and_points (?: $words| $NP)){0,$window_size}/x;
 # Relations graph
-my $graph = Graph::Undirected->new;
+# my $graph = Graph::Undirected->new(countedged => 1, countvertexed => 1);
+my $graph = Graph::Undirected->new();
+my %nodes;
+my %edges;
 
 # takes a graph prints graphviz representation
 # of it
@@ -53,18 +56,39 @@ sub run_test_print_graph {
   print_graph($graph);
 }
 
+sub stronger_relations {
+    for my $key (keys %edges){
+        my ($name1, $name2) = split ':', $key;
+        $graph = $graph->delete_edge($name1, $name2) if ((($edges{$key} / $nodes{$name1}) < 0.5) && (($edges{$key} / $nodes{$name2}) < 0.5));
+        # print("$key :::: $name1 :: $name2 :: $nodes{$name1} :: $nodes{$name2}\n");
+    }
+}
+
 # Main code:
 while(<>){
   my $line = $_;
   my $matches;
+  my $sort1;
+  my $sort2;
   while($matches = $line =~ /$NP_1 (?= ($window))/gx){
     my $first_name = $1;
     $graph->add_vertex($first_name);
+    $nodes{$first_name}++;
     my $this_window = $2;
     for my $name ($this_window =~ /$NP_1/g){
       $graph->add_edge($first_name, $name); 
+      if($first_name lt $name){
+        $sort1 = $first_name;
+        $sort2 = $name;
+      } else {
+        $sort1 = $name;
+        $sort2 = $first_name;
+      }
+      $edges{"$sort1:$sort2"}++;
     }
   }
 }
+
+stronger_relations();
 
 print_graph($graph)
