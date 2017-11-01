@@ -1,0 +1,11 @@
+#!/bin/bash
+
+BN=$(basename $1)
+
+# get the filename without the extension
+F=${BN%%.*}
+
+# image file
+IF="$F.png"
+
+./anotatePN.pl $1 | ./main.pl | dot -Tpng > "./$IF"
