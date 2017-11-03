@@ -108,7 +108,3 @@ while(<>){
 }
 
 print_possible_adjs();
-
-stronger_relations();
-
-print_graph($graph)
