@@ -39,8 +39,9 @@ sub print_graph {
     if ($catches == 0){
       s/(.*)/"$1"/;
       $line = $_;
+    } else {
+        print "$line\n";
     }
-    print "$line\n";
   }
   print "}\n";
 }
