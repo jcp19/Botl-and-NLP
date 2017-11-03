@@ -54,13 +54,12 @@ sub print_graph {
          print "CREATE (:ProperName{ Name: \"$2\"})\n";
          $nodes{$2} = 0;
       }
-#      if($edges{
-      print "WITH 1 as dummy 
+      print "WITH 1 as dummy
 MATCH (a:ProperName)
-WITH a
+WHERE a.Name = \"$1\"
 MATCH (b:ProperName)
-WITH b
-WHERE a.Name = \"$1\" AND b.Name = \"$2\"
+WHERE b.Name = \"$2\"
+WITH a,b
 CREATE (a)-[:RELACIONA_SE_COM]->(b)\n";
     }
   }
@@ -119,7 +118,4 @@ while(<>){
 
 stronger_relations();
 
-#print_graph($graph)
-
-my ($a, $b) = sort_values "ola", "adeus";
-print ("$a : $b\n");
+print_graph($graph)
