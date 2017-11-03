@@ -7,7 +7,14 @@ use utf8::all;
 # process individual paragraphs
 $/ = ''; 
 
+# Default values for variables
 my $window_size = 7;
+my $threshold = 0.3;
+
+sub parse_cmd_line_args {
+  
+}
+
 # Convention: A regex nammed XX_Y captures Y groups. We can ommit Y if it equals 0.
 my $NP = qr/\{\{ [^}]* \}\}/x;
 my $NP_1 = qr/\{\{( [^}]*) \}\}/x;
@@ -59,7 +66,7 @@ sub run_test_print_graph {
 sub stronger_relations {
     for my $key (keys %edges){
         my ($name1, $name2) = split ':', $key;
-        $graph = $graph->delete_edge($name1, $name2) if ((($edges{$key} / $nodes{$name1}) < 0.5) && (($edges{$key} / $nodes{$name2}) < 0.5));
+        $graph = $graph->delete_edge($name1, $name2) if ((($edges{$key} / $nodes{$name1}) < $threshold) && (($edges{$key} / $nodes{$name2}) < $threshold));
         # print("$key :::: $name1 :: $name2 :: $nodes{$name1} :: $nodes{$name2}\n");
     }
 }

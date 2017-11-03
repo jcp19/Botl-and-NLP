@@ -6,6 +6,6 @@ BN=$(basename $1)
 F=${BN%%.*}
 
 # image file
-IF="$F.png"
+IF="$F.cql"
 
-./anotatePN.pl $1 | ./generate_graphviz.pl | dot -Tpng > "./$IF"
+./anotatePN.pl $1 | ./generate_neo4j.pl > "./$IF"
