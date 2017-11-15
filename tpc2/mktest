@@ -3,21 +3,23 @@
 use strict;
 use utf8::all;
 
-my @pen;
-my @ppl;
-my @palavras;
-my $enTopic;
-my $plTopic;
+my @word;
+my @translation;
+my @imageURL;
+my @wordAudioUrl;
+my @translationAudioUrl;
+my @wordTransliteration;
+my $id;
 
 my $string = join("", <>);
-if ($string =~ s/(.*?)\s*=\s*(.*)//) {
-    $enTopic = $1;
-    $plTopic = $2;
-}
-while ($string =~ /(.*?)\s*=\s*(.*?)\s*=\s*(.*)/g) {
-    push(@pen, $1);
-    push(@ppl, $2);
-    push(@palavras, $3);
+
+while ($string =~ /\"(.*?)\":\"(.*?)\":\"(.*?)\":\"(.*?)\":\"(.*?)\":\"(.*?)\"/g) {
+    push(@word, $1);
+    push(@translation, $2);
+    push(@imageURL, $3);
+    push(@wordAudioUrl, $4);
+    push(@translationAudioUrl, $5);
+    push(@wordTransliteration, $6);
 }
 my %funcoes = lertemplates();
 # my $linhas = join ("", map {aplicafuncao("linha",
@@ -25,6 +27,8 @@ my %funcoes = lertemplates();
 #     pl => $ppl{$_}
 #     )} 0..(@pen-1));
 my $linhas;
+
+#mudar isto para gerar a lsta do verificador
 for (0..(@pen-1)) {
     $linhas .= ".".($_+1).linha(
         en => $pen[$_],
