@@ -9,7 +9,7 @@ my @imageURL;
 my @wordAudioUrl;
 my @translationAudioUrl;
 my @wordTransliteration;
-my $id;
+my $id = 0;
 
 my $string = join("", <>);
 
@@ -21,50 +21,55 @@ while ($string =~ /\"(.*?)\":\"(.*?)\":\"(.*?)\":\"(.*?)\":\"(.*?)\":\"(.*?)\"/g
     push(@translationAudioUrl, $5);
     push(@wordTransliteration, $6);
 }
-my %funcoes = lertemplates();
+#my %funcoes = lertemplates();
 # my $linhas = join ("", map {aplicafuncao("linha",
 #     en => $pen{$_},
 #     pl => $ppl{$_}
 #     )} 0..(@pen-1));
-my $linhas;
+#my $linhas;
 
 #mudar isto para gerar a lsta do verificador
-for (0..(@pen-1)) {
-    $linhas .= ".".($_+1).linha(
-        en => $pen[$_],
-        pl => $ppl[$_]) 
+my $var = "[";
+for (0..(@word-1)) {
+    $var .= "{\"id\":$id, \"word\":\"@word[$id]\",\"translation\":\"@translation[$id]\",\"imageUrl\":\"@imageURL[$id]\",\"wordAudioUrl\":\"@wordAudioUrl[$id]\",\"translationAudioUrl\":\"@translationAudioUrl[$id]\",\"wordTransliteration\":\"\",\"translationTransliteration\":\"\",\"hits\":0,\"misses\":0},";
+    $id = $id + 1;
 }
+$var .= "]";
+print $var;
+
 # print $linhas;
-my $result = mkexer(
-    enTopic => $enTopic,
-    plTopic => $plTopic,
-    appl => join (",", map {qq("$_")} @palavras),
-    appl2 => join (", ", map {qq($_)} @palavras),
-    linhas => $linhas
-);
 
-print $result;
-
-# ---------------------
-sub aplicafuncao {
-    my $nome = shift;
-    my %params = @_;
-    my $result = $funcoes{$nome};
-    for (keys %params) {
-       $result =~ s/§$_\b/$params{$_}/g;
-    }
-    return $result;
-}
-
-sub lertemplates {
-    my $text = join("", <DATA>);
-    my %funcoes;
-    while ($text =~ /__(\w+)__(.*?)(?=\n__|$)/gs) {
-        $funcoes{$1} = $2;
-        eval "sub $1 {aplicafuncao('$1', \@_)}";
-    }
-    return %funcoes;
-}
+# comeca aqui
+#my $result = mkexer(
+#    enTopic => $enTopic,
+#    plTopic => $plTopic,
+#    appl => join (",", map {qq("$_")} @palavras),
+#    appl2 => join (", ", map {qq($_)} @palavras),
+#    linhas => $linhas
+#);
+#
+#print $result;
+#
+## ---------------------
+#sub aplicafuncao {
+#    my $nome = shift;
+#    my %params = @_;
+#    my $result = $funcoes{$nome};
+#    for (keys %params) {
+#       $result =~ s/§$_\b/$params{$_}/g;
+#    }
+#    return $result;
+#}
+#
+#sub lertemplates {
+#    my $text = join("", <DATA>);
+#    my %funcoes;
+#    while ($text =~ /__(\w+)__(.*?)(?=\n__|$)/gs) {
+#        $funcoes{$1} = $2;
+#        eval "sub $1 {aplicafuncao('$1', \@_)}";
+#    }
+#    return %funcoes;
+#}
 
 __DATA__
 __mkexer__
