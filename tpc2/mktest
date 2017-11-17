@@ -49,7 +49,7 @@ for (0..5){
 
 # comeca aqui
 my $result = mkexer(
-  dict => $string,
+  dict => $var,
   coluna1 => $col1,
   coluna2 => $col2
 );
