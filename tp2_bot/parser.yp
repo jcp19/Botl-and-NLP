@@ -1,0 +1,54 @@
+%{
+  my %regexes;
+  my @regex_priority
+%}
+
+%token REGEX STRING
+
+%%
+BOT : ACCOES 
+    ;
+
+ACCOES : ACCOES ACCAO
+       | ACCAO
+       ;
+
+ACCAO : 'RESPOND' 'TO' REGEX 'WITH' STRING '.' { 
+            shift $_[3], @regex_priority;
+            $regexes[$_[3]] = @regex_priority;
+        }
+      ;
+
+%%
+
+my $parser=new main();
+my $bot_skel =$parser->YYParse(yylex   => \&lex, yyerror => \&yyerror);
+
+sub lex{
+  CORE::state $yytext;
+  if(not defined $yytext){ $yytext=join("",<>) }
+  for($yytext){
+    s!^\h*!! ;            ## skip spaces
+    $_ eq ""              and return ("", undef);
+    # Pode precisar de correção
+    s/\/(.*)\///          and return ("REGEX", $1); 
+    s/\"(.*)\"//          and return ("STRING", $1);
+
+#    print STDERR "Erro: unknown char '$_'\n" ;
+  }
+}
+
+sub yyerror {
+  print  STDERR "Syntax Error:";
+  if ($_[0]->YYCurtok) {
+      printf STDERR (' a "%s" (%s) was found where %s was expected'."\n",
+         $_[0]->YYCurtok, $_[0]->YYCurval, $_[0]->YYExpect)
+  }
+  else{ print STDERR "Expecting one of ",join(", ",$_[0]->YYExpect),"\n";}
+}
+
+while(<>) {
+  for my $re (@regex_priority) {
+    print $regexes{$re} and break if $_ =~ /$re/;
+  }
+}

@@ -1,0 +1,5 @@
+# EASY BOT CREATION LANGUAGE
+***
+
+
+## Language
