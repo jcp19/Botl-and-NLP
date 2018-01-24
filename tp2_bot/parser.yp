@@ -14,8 +14,8 @@ ACCOES : ACCOES ACCAO
        ;
 
 ACCAO : 'RESPOND' 'TO' REGEX 'WITH' STRING '.' { 
-            shift $_[3], @regex_priority;
-            $regexs[$_[3]] = @regex_priority;
+            unshift(@regex_priority, $_[3]);
+            $regexs{$_[3]} = @regex_priority;
         }
       ;
 
@@ -31,8 +31,8 @@ sub lex{
     s!^\h*!! ;            ## skip spaces
     $_ eq ""              and return ("", undef);
     # Pode precisar de correção
-    s/\/(.*)\///          and return ("REGEX", $1); 
-    s/\"(.*)\"//          and return ("STRING", $1);
+    s/^\/(.*)\///          and return ("REGEX", $1); 
+    s/^\"(.*)\"//          and return ("STRING", $1);
 
 #    print STDERR "Erro: unknown char '$_'\n" ;
   }
