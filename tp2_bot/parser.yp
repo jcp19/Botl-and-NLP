@@ -1,6 +1,6 @@
 %{
-  my %regexes;
-  my @regex_priority
+  my @regex_priority;
+  my %regexs;
 %}
 
 %token REGEX STRING
@@ -15,7 +15,7 @@ ACCOES : ACCOES ACCAO
 
 ACCAO : 'RESPOND' 'TO' REGEX 'WITH' STRING '.' { 
             shift $_[3], @regex_priority;
-            $regexes[$_[3]] = @regex_priority;
+            $regexs[$_[3]] = @regex_priority;
         }
       ;
 
@@ -49,6 +49,6 @@ sub yyerror {
 
 while(<>) {
   for my $re (@regex_priority) {
-    print $regexes{$re} and break if $_ =~ /$re/;
+    print $regexs{$re} and last if $_ =~ /$re/;
   }
 }
