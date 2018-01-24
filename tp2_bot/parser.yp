@@ -32,7 +32,7 @@ sub lex{
     $_ eq ""              and return ("", undef);
     # Pode precisar de correção
     s/^\/(.*)\///          and return ("REGEX", $1); 
-    s/^\"(.*)\"//          and return ("STRING", $1);
+    s/^\"(.*)\"//          and return ("STRING", $2);
 
 #    print STDERR "Erro: unknown char '$_'\n" ;
   }
