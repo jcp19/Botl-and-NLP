@@ -12,23 +12,20 @@
   my $prompt = ">>>";
 %}
 
-%token REGEX STRING INT
+%token REGEX STRING INT COMMENT
 
 %%
 BOT : ACTIONS #{print $count,"\n";}
     ;
 
-ACTIONS : ACTIONS ACTION '.' #{$count++;}
-       | ACTION '.' #{$count++;}
+ACTIONS : ACTIONS ACTION #{$count++;}
+       | ACTION #{$count++;}
        ;
 
-ACTION : PATTERN_REACTION
-       | TIMED_EVENT
-#       | COMMENT
+ACTION : PATTERN_REACTION '.'
+       | TIMED_EVENT '.'
+       | COMMENT
        ;
-
-#COMMENT : '#' '/.*/'
-#        ;
 
 TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
     push (@event_actions, $_[2]); 
@@ -86,9 +83,10 @@ sub lex{
     s/^\"(.*?)\"//        and return ("STRING", $1);
     #s/\/((?:(?!\\\/).)*)\/// and return ("REGEX", $1); 
     #s/\"((?:(?!\\\").)*)\"// and return ("STRING", $1);
+    s/^#.*//              and return ("COMMENT", "");
     s/^[.]//              and return (".",".");
-    s/^(\d+)//             and return ("INT", $1);
-    s/^(\w+)//             and return ("$1", $1);
+    s/^(\d+)//            and return ("INT", $1);
+    s/^(\w+)//            and return ("$1", $1);
   }
 }
 
@@ -125,7 +123,6 @@ my $thr = threads->create('timing_events');
 while(<>) {
   # reset LAST_MESSAGE events
   for my $i (@events) {
-    #print "@events\n";
     if($events[$i] == 'LAST_MESSAGE'){
         $timings[$i] = 0;
     }
