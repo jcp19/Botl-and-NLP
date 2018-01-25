@@ -1,2 +1,3 @@
 RESPOND TO /adeus/ WITH "bye" OR "bye bye".
 RESPOND TO /ola/ WITH "ola".
+SAY "está aí alguém?" 5 SECONDS AFTER LAST_MESSAGE.

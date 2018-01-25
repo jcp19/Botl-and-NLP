@@ -2,9 +2,17 @@
   my @regex_priority;
   my %regexs;
   my $count;
+
+  # related to event management
+  my @event_actions :shared;
+  my @events:shared;
+  my @timings :shared;
+  my @durations :shared;
+ 
+  my $prompt = ">>>";
 %}
 
-%token REGEX STRING
+%token REGEX STRING INT
 
 %%
 BOT : ACTIONS #{print $count,"\n";}
@@ -15,11 +23,33 @@ ACTIONS : ACTIONS ACTION '.' #{$count++;}
        ;
 
 ACTION : PATTERN_REACTION
+       | TIMED_EVENT
 #       | COMMENT
        ;
 
 #COMMENT : '#' '/.*/'
 #        ;
+
+TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
+    push (@event_actions, $_[2]); 
+    push (@timings,0);
+    push (@durations, $_[3]);
+    push (@events, $_[5]);
+            }
+            ;
+
+TIME : INT TIME_UNIT { 
+     #print $_[1], "\n";
+     $_[1] * $_[2];
+   }
+   ;
+
+TIME_UNIT : 'SECONDS' {1}
+          | 'MINUTES' {60}
+          ;
+
+EVENT : 'LAST_MESSAGE' {"LAST_MESSAGE"}
+      ;
 
 PATTERN_REACTION : 'RESPOND' 'TO' REGEX 'WITH' STRING_LIST { 
            # print $_[3] . "=>" . $_[5];
@@ -38,6 +68,8 @@ STRING_LIST : STRING 'OR' STRING_LIST {
             ;
 
 %%
+use threads;
+use threads::shared;
 
 my $parser=new main();
 my $bot_skel =$parser->YYParse(yylex   => \&lex, yyerror => \&yyerror);
@@ -45,7 +77,6 @@ my $bot_skel =$parser->YYParse(yylex   => \&lex, yyerror => \&yyerror);
 sub lex{
   CORE::state $yytext;
   if(not defined $yytext){ $yytext=join("",<>) }
-  #print(":: YYTEXT :: $yytext");
   for($yytext){
     s/^\s*// ;            ## skip spaces
     $_ eq ""              and return ("", undef);
@@ -56,7 +87,8 @@ sub lex{
     #s/\/((?:(?!\\\/).)*)\/// and return ("REGEX", $1); 
     #s/\"((?:(?!\\\").)*)\"// and return ("STRING", $1);
     s/^[.]//              and return (".",".");
-    s/(\w+)//             and return ("$1", $1);
+    s/^(\d+)//             and return ("INT", $1);
+    s/^(\w+)//             and return ("$1", $1);
   }
 }
 
@@ -69,11 +101,42 @@ sub yyerror {
   else{ print STDERR "Expecting one of ",join(", ",$_[0]->YYExpect),"\n";}
 }
 
+
+#print @events, "\n------------------\n", @event_actions, "\n-----\n", @durations,
+ "\n-----------\n", @timings, "\n";
+
+sub timing_events {
+   while(1) {
+     sleep 1;
+     for my $i (@events) {
+       if($timings[$i] == $durations[$i]) {
+         # lacks multithreaded access control
+         print "$prompt $event_actions[$i]", "\n";
+         $timings[$i] = 0;
+       } else {
+         $timings[$i]++; 
+       }
+     }
+   } 
+}
+
+my $thr = threads->create('timing_events');
+
 while(<>) {
+  # reset LAST_MESSAGE events
+  for my $i (@events) {
+    #print "@events\n";
+    if($events[$i] == 'LAST_MESSAGE'){
+        $timings[$i] = 0;
+    }
+  }
+
   chomp;
+  
   for my $re (@regex_priority) {
     my $length = @{ $regexs{$re} };
     my $response = $regexs{$re}[rand $length]; 
-    print ">> $response\n" and last if $_ =~ /$re/;
+    print "$prompt $response\n" and last if $_ =~ /$re/;
   }
 }
+$thr->join;
