@@ -1,1 +1,2 @@
-RESPOND TO /ola/ WITH "Como estás?".
+RESPOND TO /adeus/ WITH "bye" OR "bye bye".
+RESPOND TO /ola/ WITH "ola".

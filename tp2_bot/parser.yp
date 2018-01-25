@@ -1,23 +1,41 @@
 %{
   my @regex_priority;
   my %regexs;
+  my $count;
 %}
 
 %token REGEX STRING
 
 %%
-BOT : ACCOES 
+BOT : ACTIONS #{print $count,"\n";}
     ;
 
-ACCOES : ACCOES ACCAO
-       | ACCAO
+ACTIONS : ACTIONS ACTION '.' #{$count++;}
+       | ACTION '.' #{$count++;}
        ;
 
-ACCAO : 'RESPOND' 'TO' REGEX 'WITH' STRING '.' { 
+ACTION : PATTERN_REACTION
+#       | COMMENT
+       ;
+
+#COMMENT : '#' '/.*/'
+#        ;
+
+PATTERN_REACTION : 'RESPOND' 'TO' REGEX 'WITH' STRING_LIST { 
+           # print $_[3] . "=>" . $_[5];
             unshift(@regex_priority, $_[3]);
-            $regexs{$_[3]} = @regex_priority;
+            $regexs{$_[3]} = $_[5];
         }
       ;
+
+STRING_LIST : STRING 'OR' STRING_LIST { 
+                my $list_ref = $_[3];
+                my @list = @$list_ref;
+                [$_[1], @list];
+            }
+            | STRING { 
+                my $list_ref = [$_[1]];}
+            ;
 
 %%
 
@@ -27,14 +45,18 @@ my $bot_skel =$parser->YYParse(yylex   => \&lex, yyerror => \&yyerror);
 sub lex{
   CORE::state $yytext;
   if(not defined $yytext){ $yytext=join("",<>) }
+  #print(":: YYTEXT :: $yytext");
   for($yytext){
-    s!^\h*!! ;            ## skip spaces
+    s/^\s*// ;            ## skip spaces
     $_ eq ""              and return ("", undef);
-    # Pode precisar de correção
-    s/^\/(.*)\///          and return ("REGEX", $1); 
-    s/^\"(.*)\"//          and return ("STRING", $2);
-
-#    print STDERR "Erro: unknown char '$_'\n" ;
+    #s/^\/(.*?)\///        and return ("REGEX", $1); 
+    #s/^\"(.*?)\"//        and return ("STRING", $1);
+    s/^\/(.*?)\///        and return ("REGEX", $1); 
+    s/^\"(.*?)\"//        and return ("STRING", $1);
+    #s/\/((?:(?!\\\/).)*)\/// and return ("REGEX", $1); 
+    #s/\"((?:(?!\\\").)*)\"// and return ("STRING", $1);
+    s/^[.]//              and return (".",".");
+    s/(\w+)//             and return ("$1", $1);
   }
 }
 
@@ -48,7 +70,10 @@ sub yyerror {
 }
 
 while(<>) {
+  chomp;
   for my $re (@regex_priority) {
-    print $regexs{$re} and last if $_ =~ /$re/;
+    my $length = @{ $regexs{$re} };
+    my $response = $regexs{$re}[rand $length]; 
+    print ">> $response\n" and last if $_ =~ /$re/;
   }
 }
