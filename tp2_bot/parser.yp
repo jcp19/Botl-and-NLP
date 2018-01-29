@@ -1,4 +1,5 @@
 %{
+  use utf8::all;
   my @regex_priority;
   my %regexs;
   my $count;
@@ -50,8 +51,12 @@ EVENT : 'LAST_MESSAGE' {"LAST_MESSAGE"}
 
 PATTERN_REACTION : 'RESPOND' 'TO' REGEX 'WITH' STRING_LIST { 
            # print $_[3] . "=>" . $_[5];
-            unshift(@regex_priority, $_[3]);
+            push(@regex_priority, $_[3]);
             $regexs{$_[3]} = $_[5];
+        }
+        | 'DEFAULT' 'TO' STRING_LISTS {
+            unshift(@regex_priority, $_[3]);
+            $regexs{""} = $_[5];
         }
       ;
 
@@ -99,9 +104,12 @@ sub yyerror {
   else{ print STDERR "Expecting one of ",join(", ",$_[0]->YYExpect),"\n";}
 }
 
+#for $_ (@regex_priority) {
+#    print "\"$_\"", "\n";
+#}
 
-#print @events, "\n------------------\n", @event_actions, "\n-----\n", @durations,
- "\n-----------\n", @timings, "\n";
+# print @events, "\n------------------\n", @event_actions, "\n-----\n", @durations,
+#  "\n-----------\n", @timings, "\n";
 
 sub timing_events {
    while(1) {
@@ -132,8 +140,10 @@ while(<>) {
   
   for my $re (@regex_priority) {
     my $length = @{ $regexs{$re} };
-    my $response = $regexs{$re}[rand $length]; 
-    print "$prompt $response\n" and last if $_ =~ /$re/;
+    if($_ =~ /$re/i) {
+      my $response = $regexs{$re}[rand $length]; 
+      eval "print \"$prompt $response\n\"" and last;
+    }
   }
 }
 $thr->join;
