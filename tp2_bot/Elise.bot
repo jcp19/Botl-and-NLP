@@ -1,0 +1,15 @@
+# CREATE NEW ENVIRONMENT WITH
+RESPOND TO /adeus/ WITH "bye" OR "bye bye".
+RESPOND TO /ola/ WITH "ola".
+# SAY "está aí alguém?" 5 SECONDS AFTER LAST_MESSAGE.
+
+RESPOND TO /o meu nome e ([a-z]*)/ WITH "Ola $1".
+RESPOND TO /qual [ée] a letra da m[úu]sica ((?:\w+\s*)+)[?]?/ WITH "$1".
+
+DEFAULT TO "Não percebi, por favor refaz a tua pergunta." OR "Tá errado".
+
+# records the name in the environment
+ASK "Como te chamas?" AND RECORD IN "name".
+
+# resets the environment (for new users, after logout)
+RESET WHEN "adeus" OR "Bye" OR "Ate depois".
