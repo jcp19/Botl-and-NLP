@@ -1,7 +1,9 @@
 %{
   use utf8::all;
+  # pattern reaction
   my @regex_priority;
   my %regexs;
+  my $defaults;
   my $count;
 
   # related to event management
@@ -9,14 +11,24 @@
   my @events:shared;
   my @timings :shared;
   my @durations :shared;
+  my @reset_strings :shared;
  
   my $prompt = ">>>";
+
+  # environment 
+  my %environment = (ola => "bye");
+  my %answers;
+  my $responding_to;
 %}
 
 %token REGEX STRING INT COMMENT
 
 %%
-BOT : ACTIONS #{print $count,"\n";}
+BOT : ACTIONS {
+        # print $count,"\n";
+        push (@regex_priority, "");
+        $regexs{""} = $defaults;
+    }
     ;
 
 ACTIONS : ACTIONS ACTION #{$count++;}
@@ -26,6 +38,7 @@ ACTIONS : ACTIONS ACTION #{$count++;}
 ACTION : PATTERN_REACTION '.'
        | TIMED_EVENT '.'
        | COMMENT
+       | RESET '.'
        ;
 
 TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
@@ -33,8 +46,16 @@ TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
     push (@timings,0);
     push (@durations, $_[3]);
     push (@events, $_[5]);
-            }
-            ;
+  }
+  | 'ASK' STRING 'AND' 'RECORD' 'IN' STRING {
+    push (@event_actions, $_[2]); 
+    push (@timings,0);
+    push (@durations, 10 + int(rand(10)));
+    push (@events, "ASK");
+  }
+            # | 'ASK' STRING
+  ;
+
 
 TIME : INT TIME_UNIT { 
      #print $_[1], "\n";
@@ -49,14 +70,25 @@ TIME_UNIT : 'SECONDS' {1}
 EVENT : 'LAST_MESSAGE' {"LAST_MESSAGE"}
       ;
 
+RESET : 'RESET' 'WHEN' STRING_LIST {
+           my @list = @{$_[3]};
+           # print "||||", @$_[3];
+           for my $str (@list){
+             # print "**** $str\n";
+             push @reset_strings, $str;
+           }
+      }
+      ;
+
 PATTERN_REACTION : 'RESPOND' 'TO' REGEX 'WITH' STRING_LIST { 
            # print $_[3] . "=>" . $_[5];
             push(@regex_priority, $_[3]);
             $regexs{$_[3]} = $_[5];
         }
-        | 'DEFAULT' 'TO' STRING_LISTS {
-            unshift(@regex_priority, $_[3]);
-            $regexs{""} = $_[5];
+        | 'DEFAULT' 'TO' STRING_LIST {
+            $defaults = $_[3];
+            #unshift(@regex_priority, "");
+            #$regexs{""} = $_[3];
         }
       ;
 
@@ -66,7 +98,8 @@ STRING_LIST : STRING 'OR' STRING_LIST {
                 [$_[1], @list];
             }
             | STRING { 
-                my $list_ref = [$_[1]];}
+                my $list_ref = [$_[1]];
+            }
             ;
 
 %%
@@ -107,7 +140,7 @@ sub yyerror {
 #for $_ (@regex_priority) {
 #    print "\"$_\"", "\n";
 #}
-
+#
 # print @events, "\n------------------\n", @event_actions, "\n-----\n", @durations,
 #  "\n-----------\n", @timings, "\n";
 
@@ -119,6 +152,8 @@ sub timing_events {
          # lacks multithreaded access control
          print "$prompt $event_actions[$i]", "\n";
          $timings[$i] = 0;
+         #$durations[$i] = 10 + int(rand(10)) and $responding_to= if $events[$i] == "ASK";
+         $durations[$i] = 10 + int(rand(10)) if $events[$i] == "ASK";
        } else {
          $timings[$i]++; 
        }
@@ -128,22 +163,34 @@ sub timing_events {
 
 my $thr = threads->create('timing_events');
 
+#print "::: ", join(@reset_strings," "), "\n";
+
 while(<>) {
   # reset LAST_MESSAGE events
   for my $i (@events) {
-    if($events[$i] == 'LAST_MESSAGE'){
+    if($events[$i] == 'LAST_MESSAGE' or $events[$i] == 'ASK'){
         $timings[$i] = 0;
     }
   }
 
   chomp;
+  my $line = $_;
+  # print "line:::: ", $line, "\n";
   
   for my $re (@regex_priority) {
     my $length = @{ $regexs{$re} };
-    if($_ =~ /$re/i) {
+    if($line =~ /$re/i) {
       my $response = $regexs{$re}[rand $length]; 
       eval "print \"$prompt $response\n\"" and last;
     }
   }
+
+  #print "env: ", %environment, "\n";
+  for my $str (@reset_strings) {
+      if(!($str cmp $line)) {
+        %environment = ();
+      }
+  }
+  # print "env: ", %environment, "\n";
 }
 $thr->join;
