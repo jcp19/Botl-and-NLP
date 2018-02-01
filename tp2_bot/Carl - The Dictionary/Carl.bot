@@ -1,0 +1,18 @@
+# CREATE NEW ENVIRONMENT WITH
+RESPOND TO /[Aa]deus/ WITH "bye" OR "bye bye" OR "Adeus".
+RESPOND TO /[Oo]l[aá]/ WITH "ola" OR "oi".
+# SAY "Olá?" 10 SECONDS AFTER LAST_MESSAGE.
+RESPOND TO /.*[Co]omo te chamas.*[?]?/ WITH "Carl"
+
+
+
+
+
+
+
+# resets the environment (for new users, after logout)
+RESET WHEN "adeus" OR "Bye" OR "Ate depois" OR "Adeus".
+
+
+
+---
