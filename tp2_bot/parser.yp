@@ -68,8 +68,6 @@ TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
     push (@durations, 10 + int(rand(10)));
     push (@events, "ASK");
     $answers{$_[2]} = $_[6];
-    # TODO: add way to save environment
-    # TODO: avoid repetition of questions
   }
   | 'SAY' STRING {
     push (@event_actions, $_[2]); 
