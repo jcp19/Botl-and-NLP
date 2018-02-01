@@ -154,28 +154,20 @@ sub timing_events {
    while(1) {
      sleep 1;
      #print "RT -> $responding_to\n";
-     for my $i (@events) {
+     for (my $i = 0; $i < @events; $i++) {
        if($timings[$i] == $durations[$i]) {
-         # lacks multithreaded access control
+           # lacks multithreaded access control
          
-         #eval "print \"$prompt $event_actions[$i]\n\"" if $events[$i] ne "ASK";
-         # print "$prompt $event_actions[$i]\n" if $events[$i] ne "ASK";
-         #eval "print \"ola\", \"$prompt $event_actions[$i]\n\"" if $events[$i] ne "ASK";
-           
-         print "$prompt $event_actions[$i]\n" if $events[$i] ne "ASK";
-         #eval "print  \"prompt\"\n" if $events[$i] ne "ASK";
-         $timings[$i] = 0;
-         #$durations[$i] = 4 + int(rand(10)) if $events[$i] eq "ASK";
-         if($responding_to eq "" and $events[$i] eq "ASK") {
-           #if($events[$i] eq "ASK"){
+        if($events[$i] ne "ASK") {
+             print "$prompt $event_actions[$i]\n" if $responding_to eq "";
+             $timings[$i] = 0;
+        } else {
               if($responding_to eq ""){
                  $timings[$i] += 1 
               } else {
-                 $timings[$i] = 0;
+                 $timings[$i] = 0 if !grep { $_ eq $event_actions[$i] } @asked;
                  continue;
               }
-           #}
-           #if(not ($event_actions[$i] ~~ @asked)) {
            if(!grep { $_ eq $event_actions[$i] } @asked)  {
              # just asks questions not asked before
              print "asked:: @asked\n";
@@ -193,14 +185,17 @@ sub timing_events {
          $timings[$i]++; 
        }
      }
+     # print_data_structures();
    } 
 }
 
 sub print_data_structures {
+    print "-------------------------------------------------------\n";
     print "events: ", join(" : ", @events), "\n";
     print "event_actions: ", join(" : ", @event_actions), "\n";
     print "timings: ", join(" : ", @timings), "\n";
     print "durations: ", join(" : ", @durations), "\n";
+    print "-------------------------------------------------------\n";
 }
 
 my $thr = threads->create('timing_events');
