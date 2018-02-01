@@ -16,23 +16,25 @@
   my $prompt = ">>>";
 
   # environment 
-  my %environment = (ola => "bye");
+  my %environment;
   my %answers;
   my $responding_to;
+
+  # default bot variables
+  my $BOT_NAME;
 %}
 
 %token REGEX STRING INT COMMENT
 
 %%
 BOT : ACTIONS {
-        # print $count,"\n";
         push (@regex_priority, "");
         $regexs{""} = $defaults;
     }
     ;
 
-ACTIONS : ACTIONS ACTION #{$count++;}
-       | ACTION #{$count++;}
+ACTIONS : ACTIONS ACTION 
+       | ACTION
        ;
 
 ACTION : PATTERN_REACTION '.'
@@ -53,12 +55,9 @@ TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
     push (@durations, 10 + int(rand(10)));
     push (@events, "ASK");
   }
-            # | 'ASK' STRING
   ;
 
-
 TIME : INT TIME_UNIT { 
-     #print $_[1], "\n";
      $_[1] * $_[2];
    }
    ;
@@ -72,23 +71,18 @@ EVENT : 'LAST_MESSAGE' {"LAST_MESSAGE"}
 
 RESET : 'RESET' 'WHEN' STRING_LIST {
            my @list = @{$_[3]};
-           # print "||||", @$_[3];
            for my $str (@list){
-             # print "**** $str\n";
              push @reset_strings, $str;
            }
       }
       ;
 
 PATTERN_REACTION : 'RESPOND' 'TO' REGEX 'WITH' STRING_LIST { 
-           # print $_[3] . "=>" . $_[5];
             push(@regex_priority, $_[3]);
             $regexs{$_[3]} = $_[5];
         }
         | 'DEFAULT' 'TO' STRING_LIST {
             $defaults = $_[3];
-            #unshift(@regex_priority, "");
-            #$regexs{""} = $_[3];
         }
       ;
 
@@ -115,12 +109,8 @@ sub lex{
   for($yytext){
     s/^\s*// ;            ## skip spaces
     $_ eq ""              and return ("", undef);
-    #s/^\/(.*?)\///        and return ("REGEX", $1); 
-    #s/^\"(.*?)\"//        and return ("STRING", $1);
     s/^\/(.*?)\///        and return ("REGEX", $1); 
     s/^\"(.*?)\"//        and return ("STRING", $1);
-    #s/\/((?:(?!\\\/).)*)\/// and return ("REGEX", $1); 
-    #s/\"((?:(?!\\\").)*)\"// and return ("STRING", $1);
     s/^#.*//              and return ("COMMENT", "");
     s/^[.]//              and return (".",".");
     s/^(\d+)//            and return ("INT", $1);
@@ -137,13 +127,6 @@ sub yyerror {
   else{ print STDERR "Expecting one of ",join(", ",$_[0]->YYExpect),"\n";}
 }
 
-#for $_ (@regex_priority) {
-#    print "\"$_\"", "\n";
-#}
-#
-# print @events, "\n------------------\n", @event_actions, "\n-----\n", @durations,
-#  "\n-----------\n", @timings, "\n";
-
 sub timing_events {
    while(1) {
      sleep 1;
@@ -152,8 +135,7 @@ sub timing_events {
          # lacks multithreaded access control
          print "$prompt $event_actions[$i]", "\n";
          $timings[$i] = 0;
-         #$durations[$i] = 10 + int(rand(10)) and $responding_to= if $events[$i] == "ASK";
-         $durations[$i] = 10 + int(rand(10)) if $events[$i] == "ASK";
+         $durations[$i] = 8 + int(rand(10)) if $events[$i] == "ASK";
        } else {
          $timings[$i]++; 
        }
@@ -162,8 +144,6 @@ sub timing_events {
 }
 
 my $thr = threads->create('timing_events');
-
-#print "::: ", join(@reset_strings," "), "\n";
 
 while(<>) {
   # reset LAST_MESSAGE events
@@ -175,7 +155,6 @@ while(<>) {
 
   chomp;
   my $line = $_;
-  # print "line:::: ", $line, "\n";
   
   for my $re (@regex_priority) {
     my $length = @{ $regexs{$re} };
@@ -185,12 +164,10 @@ while(<>) {
     }
   }
 
-  #print "env: ", %environment, "\n";
   for my $str (@reset_strings) {
       if(!($str cmp $line)) {
         %environment = ();
       }
   }
-  # print "env: ", %environment, "\n";
 }
 $thr->join;
