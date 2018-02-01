@@ -1,10 +1,21 @@
 # CREATE NEW ENVIRONMENT WITH
+RESPOND TO /hasta la vista/ WITH "baby ;)".
 RESPOND TO /adeus/ WITH "bye" OR "bye bye".
 RESPOND TO /ola/ WITH "ola".
 # SAY "está aí alguém?" 5 SECONDS AFTER LAST_MESSAGE.
+# SAY "Hello?? Is it me you're looking for?" 10 seconds AFTER LAST_MESSAGE
+
+RESPOND TO /troll me/ WITH "Never gonna give you up. Never gonna let you down...".
 
 RESPOND TO /o meu nome e ([a-z]*)/ WITH "Ola $1".
 RESPOND TO /qual [ée] a letra da m[úu]sica ((?:\w+\s*)+)[?]?/ WITH "$1".
+
+
+RESPOND TO /merda|caralho|puta|foda|fodido/ WITH "Essa linguagem é totalmente desnecessária." OR "É escusado falares assim." OR "Beijas a tua mãe com essa boca?" OR "Mas é que nem vou falar do assunto se continuas com essa linguagem".
+
+RESPOND TO /(os|as|o|a) ([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?).*[?]$/ WITH "$1 $2? Eu não tenho essa informação agora." OR "Talvez, mas quem sabe ao certo não é?".
+
+RESPOND TO /(os|as|o|a) ([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/ WITH "$2, hein? Eu gosto, mas eu sou um bot qualquer coisa me agrada." OR "Estava agora mesmo a ouvir $2." OR "Eu vou dize-lo, $2? Não é a minha onda." OR "Eu não desgosto d$1 $2, por acaso.".
 
 DEFAULT TO "Não percebi, por favor refaz a tua pergunta." OR "Tá errado".
 
