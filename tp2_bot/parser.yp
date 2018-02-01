@@ -95,7 +95,7 @@ EVENT : 'LAST_MESSAGE' {"LAST_MESSAGE"}
 RESET : 'RESET' 'WHEN' STRING_LIST {
            my @list = @{$_[3]};
            for my $str (@list){
-             push @reset_strings, $str;
+               push @reset_strings, $str;
            }
       }
       ;
@@ -206,7 +206,7 @@ my $thr = threads->create('timing_events');
 
 while(<>) {
   # reset LAST_MESSAGE events
-  for my $i (@events) {
+  for (my $i = 0; $i < @events; $i++) {
     if($events[$i] == 'LAST_MESSAGE' or $events[$i] == 'ASK'){
         $timings[$i] = 0;
     }
@@ -227,18 +227,22 @@ while(<>) {
     
       for my $str (@reset_strings) {
           if(!($str cmp $line)) {
+            # Reinicia o ambiente
             %env = ();
+            @asked = ();
+            for (my $i = 0; $i < @events; $i++) {
+                $timings[$i] = 0;
+            }
           }
       }
   } else {
       $env{$responding_to} = $line;
-      #print "$responding_to == $line\n";
       $responding_to = "";
   }
   
-#print %answers, "\n";
+# print %answers, "\n";
 # print_data_structures;
-print "env: ", %env, "\n";
+# print "env: ", %env, "\n";
 
 }
 $thr->join;
