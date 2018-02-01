@@ -1,5 +1,7 @@
+# BOTL - BOT LANGUAGE
 %{
   use utf8::all;
+  use String::Interpolate qw( interpolate );
   # pattern reaction
   my @regex_priority;
   my %regexs;
@@ -16,7 +18,7 @@
   my $prompt = ">>>";
 
   # environment 
-  my %environment;
+  my %env : shared;
 
   # manages the answer mechanism
   my %answers; # tells where to save the answers for a question
@@ -159,7 +161,9 @@ sub timing_events {
            # lacks multithreaded access control
          
         if($events[$i] ne "ASK") {
-             print "$prompt $event_actions[$i]\n" if $responding_to eq "";
+             #print interpolate($event_actions[$i]), "\n";
+             #TODO : fix interpolation with the environment
+             print "$prompt $event_actions[$i] :EVAL: \n " if $responding_to eq "";
              $timings[$i] = 0;
         } else {
               if($responding_to eq ""){
@@ -170,7 +174,7 @@ sub timing_events {
               }
            if(!grep { $_ eq $event_actions[$i] } @asked)  {
              # just asks questions not asked before
-             print "asked:: @asked\n";
+             # print "asked:: @asked\n";
              print "$prompt $event_actions[$i]", "\n";
              #print ":::", $answers{$event_actions[$i]}, "\n";
              if(exists($answers{$event_actions[$i]})){
@@ -223,17 +227,18 @@ while(<>) {
     
       for my $str (@reset_strings) {
           if(!($str cmp $line)) {
-            %environment = ();
+            %env = ();
           }
       }
   } else {
-      $environment{$responding_to} = $line;
+      $env{$responding_to} = $line;
       #print "$responding_to == $line\n";
       $responding_to = "";
   }
   
-print %answers, "\n";
-print_data_structures;
+#print %answers, "\n";
+# print_data_structures;
+print "env: ", %env, "\n";
 
 }
 $thr->join;
