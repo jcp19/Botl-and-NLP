@@ -17,8 +17,12 @@
 
   # environment 
   my %environment;
-  my %answers;
-  my $responding_to;
+
+  # manages the answer mechanism
+  my %answers; # tells where to save the answers for a question
+  my @asked; # keeps track of the questions made to avoid repeated questions
+  my $responding_to :shared;
+  $responding_to = "";
 
   # default bot variables
   my $BOT_NAME;
@@ -37,10 +41,17 @@ ACTIONS : ACTIONS ACTION
        | ACTION
        ;
 
-ACTION : PATTERN_REACTION '.'
-       | TIMED_EVENT '.'
+ACTION : INSTRUCTION '.'
        | COMMENT
-       | RESET '.'
+       ;
+
+INSTRUCTION : PATTERN_REACTION
+       | TIMED_EVENT
+       | RESET
+       | NAMING
+       ;
+
+NAMING : 'BOT' STRING { $BOT_NAME = $_[2]; }
        ;
 
 TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
@@ -54,7 +65,17 @@ TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
     push (@timings,0);
     push (@durations, 10 + int(rand(10)));
     push (@events, "ASK");
+    $answers{$_[2]} = $_[6];
+    # TODO: add way to save environment
+    # TODO: avoid repetition of questions
   }
+  | 'SAY' STRING {
+    push (@event_actions, $_[2]); 
+    push (@timings,0);
+    push (@durations, 7 + int(rand(7)));
+    push (@events, "ASK");
+  }
+
   ;
 
 TIME : INT TIME_UNIT { 
@@ -78,6 +99,7 @@ RESET : 'RESET' 'WHEN' STRING_LIST {
       ;
 
 PATTERN_REACTION : 'RESPOND' 'TO' REGEX 'WITH' STRING_LIST { 
+            # TODO: detect repeated queries
             push(@regex_priority, $_[3]);
             $regexs{$_[3]} = $_[5];
         }
@@ -128,19 +150,57 @@ sub yyerror {
 }
 
 sub timing_events {
+# thread that handles timed events and questions
    while(1) {
      sleep 1;
+     #print "RT -> $responding_to\n";
      for my $i (@events) {
        if($timings[$i] == $durations[$i]) {
          # lacks multithreaded access control
-         print "$prompt $event_actions[$i]", "\n";
+         
+         #eval "print \"$prompt $event_actions[$i]\n\"" if $events[$i] ne "ASK";
+         # print "$prompt $event_actions[$i]\n" if $events[$i] ne "ASK";
+         #eval "print \"ola\", \"$prompt $event_actions[$i]\n\"" if $events[$i] ne "ASK";
+           
+         print "$prompt $event_actions[$i]\n" if $events[$i] ne "ASK";
+         #eval "print  \"prompt\"\n" if $events[$i] ne "ASK";
          $timings[$i] = 0;
-         $durations[$i] = 8 + int(rand(10)) if $events[$i] == "ASK";
-       } else {
+         #$durations[$i] = 4 + int(rand(10)) if $events[$i] eq "ASK";
+         if($responding_to eq "" and $events[$i] eq "ASK") {
+           #if($events[$i] eq "ASK"){
+              if($responding_to eq ""){
+                 $timings[$i] += 1 
+              } else {
+                 $timings[$i] = 0;
+                 continue;
+              }
+           #}
+           #if(not ($event_actions[$i] ~~ @asked)) {
+           if(!grep { $_ eq $event_actions[$i] } @asked)  {
+             # just asks questions not asked before
+             print "asked:: @asked\n";
+             print "$prompt $event_actions[$i]", "\n";
+             #print ":::", $answers{$event_actions[$i]}, "\n";
+             if(exists($answers{$event_actions[$i]})){
+                 $responding_to = $answers{$event_actions[$i]};
+             }
+             #print "rt:: $responding_to", "\n";
+             push (@asked, $event_actions[$i]);
+           }
+             
+         }
+       } elsif ($timings[$i] < $durations[$i]){
          $timings[$i]++; 
        }
      }
    } 
+}
+
+sub print_data_structures {
+    print "events: ", join(" : ", @events), "\n";
+    print "event_actions: ", join(" : ", @event_actions), "\n";
+    print "timings: ", join(" : ", @timings), "\n";
+    print "durations: ", join(" : ", @durations), "\n";
 }
 
 my $thr = threads->create('timing_events');
@@ -155,19 +215,30 @@ while(<>) {
 
   chomp;
   my $line = $_;
-  
-  for my $re (@regex_priority) {
-    my $length = @{ $regexs{$re} };
-    if($line =~ /$re/i) {
-      my $response = $regexs{$re}[rand $length]; 
-      eval "print \"$prompt $response\n\"" and last;
-    }
-  }
 
-  for my $str (@reset_strings) {
-      if(!($str cmp $line)) {
-        %environment = ();
+  if($responding_to eq ""){
+      # the program is reading an user question/query
+      for my $re (@regex_priority) {
+        my $length = @{ $regexs{$re} };
+        if($line =~ /$re/i) {
+          my $response = $regexs{$re}[rand $length]; 
+          eval "print \"$prompt $response\n\"" and last;
+        }
       }
+    
+      for my $str (@reset_strings) {
+          if(!($str cmp $line)) {
+            %environment = ();
+          }
+      }
+  } else {
+      $environment{$responding_to} = $line;
+      #print "$responding_to == $line\n";
+      $responding_to = "";
   }
+  
+print %answers, "\n";
+print_data_structures;
+
 }
 $thr->join;
