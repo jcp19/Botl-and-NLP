@@ -12,7 +12,3 @@ RESPOND TO /.*[Co]omo te chamas.*[?]?/ WITH "Carl"
 
 # resets the environment (for new users, after logout)
 RESET WHEN "adeus" OR "Bye" OR "Ate depois" OR "Adeus".
-
-
-
----
