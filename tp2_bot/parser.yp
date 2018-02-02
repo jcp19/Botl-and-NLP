@@ -7,6 +7,10 @@
   my %regexs;
   my $defaults;
   my $count;
+  # parsed pattern reaction
+  my %regex_to_parser;
+  my %regex_to_url_generator;
+  my @parsed_regexs;
 
   # related to event management
   my @event_actions :shared;
@@ -149,7 +153,13 @@ PATTERN_REACTION : 'RESPOND' 'TO' REGEX 'WITH' STRING_LIST {
             # violent syntax
             $defaults = $_[3];
         }
+        | 'RESPOND' 'TO' REGEX 'WITH' 'PARSE' PERL_CODE 'USING' PERL_CODE {
+           $regex_to_parser{$_[3]} = $_[8];
+           $regex_to_url_generator{$_[3]} = $_[6];
+           push (@parsed_regexs, $_[3]);
+        }
       ;
+
 
 STRING_LIST : STRING 'OR' STRING_LIST { 
                 my $list_ref = $_[3];
@@ -183,6 +193,7 @@ sub lex{
     s/^\/(.*?)\///        and return ("REGEX", $1); 
     s/^\"(.*?)\"//        and return ("STRING", $1);
     s/^#.*//              and return ("COMMENT", "");
+    s/^<<<((?:[\n]|.)*?)>>>//       and return ("PERL_CODE", $1);
     s/^->//               and return ("->", "->");
     s/^:=//               and return (":=", ":=");
     s/^([.,])//           and return ("$1",$1);
@@ -253,6 +264,10 @@ sub print_data_structures {
 
 my $thr = threads->create('timing_events');
 
+#print @parsed_regexs, "\n";
+#print %regex_to_parser, "\n";
+#print %regex_to_url_generator, "\n";
+
 while(<>) {
   # reset LAST_MESSAGE events
   for (my $i = 0; $i < @events; $i++) {
@@ -265,7 +280,19 @@ while(<>) {
   my $line = $_;
 
   if($responding_to eq ""){
+      my $found = 0;
       # the program is reading an user question/query
+      for my $re (@parsed_regexs) {
+         if($line =~ /$re/i){
+            $found = 1;
+            my $expr = eval $regex_to_url_generator{$re};
+            print "$expr\n";
+            #eval "print $line, \"\n\""; 
+            last;
+         }
+      }
+
+      if(not $found){
       for my $re (@regex_priority) {
         my $length = @{ $regexs{$re} };
         if($line =~ /$re/i) {
@@ -273,6 +300,7 @@ while(<>) {
           eval "print \"$prompt $response\n\"" and last;
         }
       }
+     }
     
       for my $str (@reset_strings) {
           if(!($str cmp $line)) {
