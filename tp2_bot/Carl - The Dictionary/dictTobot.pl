@@ -29,7 +29,7 @@ while(<$fh>) {
     else {
         if ($input =~ /^\n/){
             $flag = 0;
-            print "\"\n";
+            print "\".\n";
         }
         else { 
             chomp $input;
