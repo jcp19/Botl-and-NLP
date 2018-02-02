@@ -14,6 +14,7 @@ while(<$fh>) {
     if ($flag == 0){
         if($input =~ /^[A-Z]+\n/g){
             chomp $input;
+            $input =~ s/\"/\\\"/g;
             $flag = 1;
             print "RESPOND TO /[Dd]efinition of $input/ WITH \"";
         }
@@ -22,6 +23,7 @@ while(<$fh>) {
         if($input =~ /^Defn/){
             
             chomp $input;
+            $input =~ s/\"/\\\"/g;
             print "$input ";
             $flag = 2;
         }
@@ -33,6 +35,7 @@ while(<$fh>) {
         }
         else { 
             chomp $input;
+            $input =~ s/\"/\\\"/g;
             print "$input ";
         }
     }
