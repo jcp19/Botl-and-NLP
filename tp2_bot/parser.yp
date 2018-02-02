@@ -1,7 +1,7 @@
 # BOTL - BOT LANGUAGE
 %{
   use utf8::all;
-  use String::Interpolate qw( interpolate );
+  #use String::Interpolate qw( interpolate );
   # pattern reaction
   my @regex_priority;
   my %regexs;
@@ -62,12 +62,27 @@ TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
     push (@durations, $_[3]);
     push (@events, $_[5]);
   }
+  | 's' STRING TIME EVENT {
+    # violent syntax
+    push (@event_actions, $_[2]); 
+    push (@timings,0);
+    push (@durations, $_[3]);
+    push (@events, $_[4]);
+  }
   | 'ASK' STRING 'AND' 'RECORD' 'IN' STRING {
     push (@event_actions, $_[2]); 
     push (@timings,0);
-    push (@durations, 10 + int(rand(10)));
+    push (@durations, 8 + int(rand(7)));
     push (@events, "ASK");
     $answers{$_[2]} = $_[6];
+  }
+  | 'a' STRING ':=' STRING {
+    # violent syntax
+    push (@event_actions, $_[4]); 
+    push (@timings,0);
+    push (@durations, 8 + int(rand(7)));
+    push (@events, "ASK");
+    $answers{$_[4]} = $_[2];
   }
   | 'SAY' STRING {
     push (@event_actions, $_[2]); 
@@ -75,7 +90,13 @@ TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
     push (@durations, 7 + int(rand(7)));
     push (@events, "ASK");
   }
-
+  | 's' STRING {
+    # violent syntax
+    push (@event_actions, $_[2]); 
+    push (@timings,0);
+    push (@durations, 7 + int(rand(7)));
+    push (@events, "ASK");
+  }
   ;
 
 TIME : INT TIME_UNIT { 
@@ -85,13 +106,25 @@ TIME : INT TIME_UNIT {
 
 TIME_UNIT : 'SECONDS' {1}
           | 'MINUTES' {60}
+          # violent syntax
+          | 'm' {60}
+          | 's' {1}
           ;
 
 EVENT : 'LAST_MESSAGE' {"LAST_MESSAGE"}
+      # violent syntax
+      | 'lm' {"LAST_MESSAGE"}
       ;
 
 RESET : 'RESET' 'WHEN' STRING_LIST {
            my @list = @{$_[3]};
+           for my $str (@list){
+               push @reset_strings, $str;
+           }
+      }
+      | 'res' STRING_LIST {
+           # violent syntax
+           my @list = @{$_[2]};
            for my $str (@list){
                push @reset_strings, $str;
            }
@@ -103,7 +136,17 @@ PATTERN_REACTION : 'RESPOND' 'TO' REGEX 'WITH' STRING_LIST {
             push(@regex_priority, $_[3]);
             $regexs{$_[3]} = $_[5];
         }
+        | REGEX '->' STRING_LIST { 
+            # violent syntax
+            # TODO: detect repeated queries
+            push(@regex_priority, $_[1]);
+            $regexs{$_[1]} = $_[3];
+        }
         | 'DEFAULT' 'TO' STRING_LIST {
+            $defaults = $_[3];
+        }
+        | 'd' '->' STRING_LIST {
+            # violent syntax
             $defaults = $_[3];
         }
       ;
@@ -113,6 +156,12 @@ STRING_LIST : STRING 'OR' STRING_LIST {
                 my @list = @$list_ref;
                 [$_[1], @list];
             }
+            | STRING ',' STRING_LIST { 
+                my $list_ref = $_[3];
+                my @list = @$list_ref;
+                [$_[1], @list];
+            }
+
             | STRING { 
                 my $list_ref = [$_[1]];
             }
@@ -134,7 +183,9 @@ sub lex{
     s/^\/(.*?)\///        and return ("REGEX", $1); 
     s/^\"(.*?)\"//        and return ("STRING", $1);
     s/^#.*//              and return ("COMMENT", "");
-    s/^[.]//              and return (".",".");
+    s/^->//               and return ("->", "->");
+    s/^:=//               and return (":=", ":=");
+    s/^([.,])//           and return ("$1",$1);
     s/^(\d+)//            and return ("INT", $1);
     s/^(\w+)//            and return ("$1", $1);
   }
@@ -161,7 +212,7 @@ sub timing_events {
         if($events[$i] ne "ASK") {
              #print interpolate($event_actions[$i]), "\n";
              #TODO : fix interpolation with the environment
-             print "$prompt $event_actions[$i] :EVAL: \n " if $responding_to eq "";
+             print "$prompt $event_actions[$i]\n" if $responding_to eq "";
              $timings[$i] = 0;
         } else {
               if($responding_to eq ""){
