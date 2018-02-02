@@ -15,7 +15,7 @@ while(<$fh>) {
         if($input =~ /^[A-Z]+\n/g){
             chomp $input;
             $flag = 1;
-            print "RESPOND TO [Dd]efinition of /$input/[?]? WITH \"";
+            print "RESPOND TO /[Dd]efinition of $input/ WITH \"";
         }
     }
     elsif ($flag == 1) {
