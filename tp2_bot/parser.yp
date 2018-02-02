@@ -1,6 +1,7 @@
 # BOTL - BOT LANGUAGE
 %{
   use utf8::all;
+  use XML::DT;
   #use String::Interpolate qw( interpolate );
   # pattern reaction
   my @regex_priority;
@@ -286,8 +287,10 @@ while(<>) {
          if($line =~ /$re/i){
             $found = 1;
             my $expr = eval $regex_to_url_generator{$re};
-            print "$expr\n";
-            #eval "print $line, \"\n\""; 
+            #my $page = `curl $expr`;
+            my %handler = eval $regex_to_parser{$re};
+            dturl($expr, %handler);
+            #print "$expr\n";
             last;
          }
       }
