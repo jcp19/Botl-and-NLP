@@ -1,10 +1,17 @@
+# BOTL - BOT LANGUAGE
 %{
   use utf8::all;
+  use XML::DT;
+  #use String::Interpolate qw( interpolate );
   # pattern reaction
   my @regex_priority;
   my %regexs;
   my $defaults;
   my $count;
+  # parsed pattern reaction
+  my %regex_to_parser;
+  my %regex_to_url_generator;
+  my @parsed_regexs;
 
   # related to event management
   my @event_actions :shared;
@@ -16,9 +23,13 @@
   my $prompt = ">>>";
 
   # environment 
-  my %environment;
-  my %answers;
-  my $responding_to;
+  my %env : shared;
+
+  # manages the answer mechanism
+  my %answers; # tells where to save the answers for a question
+  my @asked; # keeps track of the questions made to avoid repeated questions
+  my $responding_to :shared;
+  $responding_to = "";
 
   # default bot variables
   my $BOT_NAME;
@@ -37,10 +48,17 @@ ACTIONS : ACTIONS ACTION
        | ACTION
        ;
 
-ACTION : PATTERN_REACTION '.'
-       | TIMED_EVENT '.'
+ACTION : INSTRUCTION '.'
        | COMMENT
-       | RESET '.'
+       ;
+
+INSTRUCTION : PATTERN_REACTION
+       | TIMED_EVENT
+       | RESET
+       | NAMING
+       ;
+
+NAMING : 'BOT' STRING { $BOT_NAME = $_[2]; }
        ;
 
 TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
@@ -49,10 +67,39 @@ TIMED_EVENT : 'SAY' STRING TIME 'AFTER' EVENT {
     push (@durations, $_[3]);
     push (@events, $_[5]);
   }
+  | 's' STRING TIME EVENT {
+    # violent syntax
+    push (@event_actions, $_[2]); 
+    push (@timings,0);
+    push (@durations, $_[3]);
+    push (@events, $_[4]);
+  }
   | 'ASK' STRING 'AND' 'RECORD' 'IN' STRING {
     push (@event_actions, $_[2]); 
     push (@timings,0);
-    push (@durations, 10 + int(rand(10)));
+    push (@durations, 8 + int(rand(7)));
+    push (@events, "ASK");
+    $answers{$_[2]} = $_[6];
+  }
+  | 'a' STRING ':=' STRING {
+    # violent syntax
+    push (@event_actions, $_[4]); 
+    push (@timings,0);
+    push (@durations, 8 + int(rand(7)));
+    push (@events, "ASK");
+    $answers{$_[4]} = $_[2];
+  }
+  | 'SAY' STRING {
+    push (@event_actions, $_[2]); 
+    push (@timings,0);
+    push (@durations, 7 + int(rand(7)));
+    push (@events, "ASK");
+  }
+  | 's' STRING {
+    # violent syntax
+    push (@event_actions, $_[2]); 
+    push (@timings,0);
+    push (@durations, 7 + int(rand(7)));
     push (@events, "ASK");
   }
   ;
@@ -64,33 +111,68 @@ TIME : INT TIME_UNIT {
 
 TIME_UNIT : 'SECONDS' {1}
           | 'MINUTES' {60}
+          # violent syntax
+          | 'm' {60}
+          | 's' {1}
           ;
 
 EVENT : 'LAST_MESSAGE' {"LAST_MESSAGE"}
+      # violent syntax
+      | 'lm' {"LAST_MESSAGE"}
       ;
 
 RESET : 'RESET' 'WHEN' STRING_LIST {
            my @list = @{$_[3]};
            for my $str (@list){
-             push @reset_strings, $str;
+               push @reset_strings, $str;
+           }
+      }
+      | 'res' STRING_LIST {
+           # violent syntax
+           my @list = @{$_[2]};
+           for my $str (@list){
+               push @reset_strings, $str;
            }
       }
       ;
 
 PATTERN_REACTION : 'RESPOND' 'TO' REGEX 'WITH' STRING_LIST { 
+            # TODO: detect repeated queries
             push(@regex_priority, $_[3]);
             $regexs{$_[3]} = $_[5];
+        }
+        | REGEX '->' STRING_LIST { 
+            # violent syntax
+            # TODO: detect repeated queries
+            push(@regex_priority, $_[1]);
+            $regexs{$_[1]} = $_[3];
         }
         | 'DEFAULT' 'TO' STRING_LIST {
             $defaults = $_[3];
         }
+        | 'd' '->' STRING_LIST {
+            # violent syntax
+            $defaults = $_[3];
+        }
+        | 'RESPOND' 'TO' REGEX 'WITH' 'PARSE' PERL_CODE 'USING' PERL_CODE {
+           $regex_to_parser{$_[3]} = $_[8];
+           $regex_to_url_generator{$_[3]} = $_[6];
+           push (@parsed_regexs, $_[3]);
+        }
       ;
+
 
 STRING_LIST : STRING 'OR' STRING_LIST { 
                 my $list_ref = $_[3];
                 my @list = @$list_ref;
                 [$_[1], @list];
             }
+            | STRING ',' STRING_LIST { 
+                my $list_ref = $_[3];
+                my @list = @$list_ref;
+                [$_[1], @list];
+            }
+
             | STRING { 
                 my $list_ref = [$_[1]];
             }
@@ -112,7 +194,10 @@ sub lex{
     s/^\/(.*?)\///        and return ("REGEX", $1); 
     s/^\"(.*?)\"//        and return ("STRING", $1);
     s/^#.*//              and return ("COMMENT", "");
-    s/^[.]//              and return (".",".");
+    s/^<<<((?:[\n]|.)*?)>>>//       and return ("PERL_CODE", $1);
+    s/^->//               and return ("->", "->");
+    s/^:=//               and return (":=", ":=");
+    s/^([.,])//           and return ("$1",$1);
     s/^(\d+)//            and return ("INT", $1);
     s/^(\w+)//            and return ("$1", $1);
   }
@@ -128,26 +213,65 @@ sub yyerror {
 }
 
 sub timing_events {
+# thread that handles timed events and questions
    while(1) {
      sleep 1;
-     for my $i (@events) {
+     #print "RT -> $responding_to\n";
+     for (my $i = 0; $i < @events; $i++) {
        if($timings[$i] == $durations[$i]) {
-         # lacks multithreaded access control
-         print "$prompt $event_actions[$i]", "\n";
-         $timings[$i] = 0;
-         $durations[$i] = 8 + int(rand(10)) if $events[$i] == "ASK";
-       } else {
+           # lacks multithreaded access control
+         
+        if($events[$i] ne "ASK") {
+             #print interpolate($event_actions[$i]), "\n";
+             #TODO : fix interpolation with the environment
+             print "$prompt $event_actions[$i]\n" if $responding_to eq "";
+             $timings[$i] = 0;
+        } else {
+              if($responding_to eq ""){
+                 $timings[$i] += 1 
+              } else {
+                 $timings[$i] = 0 if !grep { $_ eq $event_actions[$i] } @asked;
+                 continue;
+              }
+           if(!grep { $_ eq $event_actions[$i] } @asked)  {
+             # just asks questions not asked before
+             # print "asked:: @asked\n";
+             print "$prompt $event_actions[$i]", "\n";
+             #print ":::", $answers{$event_actions[$i]}, "\n";
+             if(exists($answers{$event_actions[$i]})){
+                 $responding_to = $answers{$event_actions[$i]};
+             }
+             #print "rt:: $responding_to", "\n";
+             push (@asked, $event_actions[$i]);
+           }
+             
+         }
+       } elsif ($timings[$i] < $durations[$i]){
          $timings[$i]++; 
        }
      }
+     # print_data_structures();
    } 
+}
+
+sub print_data_structures {
+    print "-------------------------------------------------------\n";
+    print "events: ", join(" : ", @events), "\n";
+    print "event_actions: ", join(" : ", @event_actions), "\n";
+    print "timings: ", join(" : ", @timings), "\n";
+    print "durations: ", join(" : ", @durations), "\n";
+    print "-------------------------------------------------------\n";
 }
 
 my $thr = threads->create('timing_events');
 
+#print @parsed_regexs, "\n";
+#print %regex_to_parser, "\n";
+#print %regex_to_url_generator, "\n";
+
 while(<>) {
   # reset LAST_MESSAGE events
-  for my $i (@events) {
+  for (my $i = 0; $i < @events; $i++) {
     if($events[$i] == 'LAST_MESSAGE' or $events[$i] == 'ASK'){
         $timings[$i] = 0;
     }
@@ -155,19 +279,50 @@ while(<>) {
 
   chomp;
   my $line = $_;
-  
-  for my $re (@regex_priority) {
-    my $length = @{ $regexs{$re} };
-    if($line =~ /$re/i) {
-      my $response = $regexs{$re}[rand $length]; 
-      eval "print \"$prompt $response\n\"" and last;
-    }
-  }
 
-  for my $str (@reset_strings) {
-      if(!($str cmp $line)) {
-        %environment = ();
+  if($responding_to eq ""){
+      my $found = 0;
+      # the program is reading an user question/query
+      for my $re (@parsed_regexs) {
+         if($line =~ /$re/i){
+            $found = 1;
+            my $expr = eval $regex_to_url_generator{$re};
+            #my $page = `curl $expr`;
+            my %handler = eval $regex_to_parser{$re};
+            dturl($expr, %handler);
+            #print "$expr\n";
+            last;
+         }
       }
+
+      if(not $found){
+      for my $re (@regex_priority) {
+        my $length = @{ $regexs{$re} };
+        if($line =~ /$re/i) {
+          my $response = $regexs{$re}[rand $length]; 
+          eval "print \"$prompt $response\n\"" and last;
+        }
+      }
+     }
+    
+      for my $str (@reset_strings) {
+          if(!($str cmp $line)) {
+            # Reinicia o ambiente
+            %env = ();
+            @asked = ();
+            for (my $i = 0; $i < @events; $i++) {
+                $timings[$i] = 0;
+            }
+          }
+      }
+  } else {
+      $env{$responding_to} = $line;
+      $responding_to = "";
   }
+  
+# print %answers, "\n";
+# print_data_structures;
+# print "env: ", %env, "\n";
+
 }
 $thr->join;

@@ -1,0 +1,12 @@
+BOT "ELISE".
+
+/como te chamas?/ -> "Sou a $BOT_NAME".
+/adeus/ -> "bye" , "bye bye".
+/ola/ -> "ola".
+s "está aí alguém?" 5 s lm.
+a "name" := "Como te chamas?".
+
+d -> "Não percebi, por favor refaz a tua pergunta.","Tá errado".
+
+# resets the environment (for new users, after logout)
+res "adeus" , "Bye" , "Ate depois".
