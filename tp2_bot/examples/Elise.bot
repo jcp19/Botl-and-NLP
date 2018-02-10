@@ -4,15 +4,11 @@ RESPOND TO /como te chamas?/ WITH "Sou a $BOT_NAME".
 RESPOND TO /adeus/ WITH "bye" OR "bye bye".
 RESPOND TO /trola-me/ WITH "Never gonna give you up. Never gonna let you down...".
 RESPOND TO /ola/ WITH "ola".
-# SAY "está aí alguém?" 5 SECONDS AFTER LAST_MESSAGE.
-#ASK "Como te chamas?".
+SAY "está aí alguém?" 15 SECONDS AFTER LAST_MESSAGE.
 
 RESPOND TO /o meu nome e ([a-z]*)/ WITH "Ola $1".
 
 RESPOND TO /merda|caralho|puta|foda|fodido/ WITH "Essa linguagem é totalmente desnecessária." OR "É escusado falares assim." OR "Beijas a tua mãe com essa boca?" OR "Mas é que nem vou falar do assunto se continuas com essa linguagem".
-
-#RESPOND TO /qual e a letra da musica ((?:\w+\s*)+) (?:do|dos|da|das) ((?:\w+\s*)+) [?]?/ WITH PARSE 
-#<<< "http://lyrics.wikia.com/wiki/".$2.":".$1 >>> USING <<< >>>.
 
 RESPOND TO /qual e a letra da musica ((?:\w+\s*)+) (?:dos|das|do|da) ((?:\w+\s*)+)[?]?/ WITH PARSE 
 <<< 
@@ -30,7 +26,7 @@ RESPOND TO /qual e a letra da musica ((?:\w+\s*)+) (?:dos|das|do|da) ((?:\w+\s*)
 DEFAULT TO "Não percebi, por favor refaz a tua pergunta." OR "Tá errado".
 
 # records the name in the environment
-#ASK "Como te chamas?" AND RECORD IN "name".
+ASK "Como te chamas?" AND RECORD IN "name".
 #SAY "Ola".
 #SAY "Ola $env{name}" 10 SECONDS AFTER LAST_MESSAGE.
 
